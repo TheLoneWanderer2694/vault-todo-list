@@ -1,867 +1,698 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  CheckCircle2, 
-  Circle, 
-  Trash2, 
-  Plus, 
-  Copy, 
-  Check, 
-  Tv, 
-  Palette, 
-  Eye, 
-  Zap, 
-  ListTodo, 
-  HelpCircle 
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OBS Stream To-Do Overlay & Manager</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* Custom scrollbar styling for overlay and lists */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col">
 
-const THEME_PRESETS = [
-  {
-    id: 'cyberpunk',
-    name: 'Cyberpunk Neon',
-    bg: '#0f051d',
-    text: '#00f0ff',
-    accent: '#ff007f',
-    completed: '#4d2d63',
-    cardBg: 'rgba(15, 5, 29, 0.85)',
-    font: 'sans-serif',
-    transparent: false,
-    borderRadius: '8px',
-    glow: true
-  },
-  {
-    id: 'glassmorphism',
-    name: 'Clean Glass',
-    bg: '#0a0f1d',
-    text: '#ffffff',
-    accent: '#3b82f6',
-    completed: 'rgba(255, 255, 255, 0.3)',
-    cardBg: 'rgba(255, 255, 255, 0.12)',
-    font: 'sans-serif',
-    transparent: true,
-    borderRadius: '16px',
-    glow: false
-  },
-  {
-    id: 'neon_green',
-    name: 'Matrix Streamer',
-    bg: '#051005',
-    text: '#00ff66',
-    accent: '#00ffcc',
-    completed: '#0d381e',
-    cardBg: 'rgba(5, 16, 5, 0.88)',
-    font: 'monospace',
-    transparent: false,
-    borderRadius: '4px',
-    glow: true
-  },
-  {
-    id: 'minimal_dark',
-    name: 'Minimal Dark',
-    bg: '#121212',
-    text: '#f3f4f6',
-    accent: '#8b5cf6',
-    completed: '#4b5563',
-    cardBg: 'rgba(24, 24, 27, 0.95)',
-    font: 'sans-serif',
-    transparent: false,
-    borderRadius: '12px',
-    glow: false
-  },
-  {
-    id: 'retro_arcade',
-    name: 'Retro Arcade',
-    bg: '#1a0c27',
-    text: '#facc15',
-    accent: '#fb923c',
-    completed: '#6b21a8',
-    cardBg: 'rgba(26, 12, 39, 0.9)',
-    font: 'monospace',
-    transparent: false,
-    borderRadius: '0px',
-    glow: true
-  }
-];
-
-// Always start blank by default
-const INITIAL_TASKS = [];
-
-const CATEGORIES = ['All', 'Stream Goals', 'Sub Goal', 'Games', 'General', 'Break'];
-
-export default function App() {
-  const getInitialMode = () => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const hash = window.location.hash;
-      if (params.get('mode') === 'overlay' || hash.includes('mode=overlay')) {
-        return 'overlay';
+  <script>
+    const THEME_PRESETS = [
+      {
+        id: 'cyberpunk',
+        name: 'Cyberpunk Neon',
+        bg: '#0f051d',
+        text: '#00f0ff',
+        accent: '#ff007f',
+        completed: '#4d2d63',
+        cardBg: 'rgba(15, 5, 29, 0.85)',
+        font: 'sans-serif',
+        transparent: false,
+        borderRadius: 8,
+        glow: true
+      },
+      {
+        id: 'glassmorphism',
+        name: 'Clean Glass',
+        bg: '#0a0f1d',
+        text: '#ffffff',
+        accent: '#3b82f6',
+        completed: 'rgba(255, 255, 255, 0.3)',
+        cardBg: 'rgba(255, 255, 255, 0.12)',
+        font: 'sans-serif',
+        transparent: true,
+        borderRadius: 16,
+        glow: false
+      },
+      {
+        id: 'neon_green',
+        name: 'Matrix Streamer',
+        bg: '#051005',
+        text: '#00ff66',
+        accent: '#00ffcc',
+        completed: '#0d381e',
+        cardBg: 'rgba(5, 16, 5, 0.88)',
+        font: 'monospace',
+        transparent: false,
+        borderRadius: 4,
+        glow: true
+      },
+      {
+        id: 'minimal_dark',
+        name: 'Minimal Dark',
+        bg: '#121212',
+        text: '#f3f4f6',
+        accent: '#8b5cf6',
+        completed: '#4b5563',
+        cardBg: 'rgba(24, 24, 27, 0.95)',
+        font: 'sans-serif',
+        transparent: false,
+        borderRadius: 12,
+        glow: false
+      },
+      {
+        id: 'retro_arcade',
+        name: 'Retro Arcade',
+        bg: '#1a0c27',
+        text: '#facc15',
+        accent: '#fb923c',
+        completed: '#6b21a8',
+        cardBg: 'rgba(26, 12, 39, 0.9)',
+        font: 'monospace',
+        transparent: false,
+        borderRadius: 0,
+        glow: true
       }
-    }
-    return 'manager';
-  };
+    ];
 
-  const [mode, setMode] = useState(getInitialMode);
+    const CATEGORIES = ['All', 'Stream Goals', 'Sub Goal', 'Games', 'General', 'Break'];
 
-  const [tasks, setTasks] = useState(() => {
+    // Load initial state from LocalStorage
+    let tasks = [];
     try {
-      const saved = localStorage.getItem('obs_todo_tasks');
-      return saved ? JSON.parse(saved) : INITIAL_TASKS;
-    } catch {
-      return INITIAL_TASKS;
+      const savedTasks = localStorage.getItem('obs_todo_tasks');
+      tasks = savedTasks ? JSON.parse(savedTasks) : [];
+    } catch(e) {
+      tasks = [];
     }
-  });
 
-  const [settings, setSettings] = useState(() => {
+    let settings = {
+      themeId: 'cyberpunk',
+      bgColor: '#0f051d',
+      textColor: '#00f0ff',
+      accentColor: '#ff007f',
+      completedColor: '#4d2d63',
+      cardBg: 'rgba(15, 5, 29, 0.85)',
+      transparentBg: true,
+      fontSize: 16,
+      fontFamily: 'sans-serif',
+      borderRadius: 12,
+      titleText: 'Stream Goals & Tasks',
+      showTitle: true,
+      maxVisibleTasks: 6,
+      glowEffect: true,
+      soundEnabled: true
+    };
+
     try {
-      const saved = localStorage.getItem('obs_todo_settings');
-      return saved ? JSON.parse(saved) : {
-        themeId: 'cyberpunk',
-        bgColor: '#0f051d',
-        textColor: '#00f0ff',
-        accentColor: '#ff007f',
-        completedColor: '#4d2d63',
-        cardBg: 'rgba(15, 5, 29, 0.85)',
-        transparentBg: true,
-        fontSize: 16,
-        fontFamily: 'sans-serif',
-        borderRadius: 12,
-        titleText: 'Stream Goals & Tasks',
-        showTitle: true,
-        maxVisibleTasks: 6,
-        glowEffect: true,
-        compactMode: false,
-        soundEnabled: true,
-        animationSpeed: 'normal'
-      };
-    } catch {
-      return {
-        themeId: 'cyberpunk',
-        bgColor: '#0f051d',
-        textColor: '#00f0ff',
-        accentColor: '#ff007f',
-        completedColor: '#4d2d63',
-        cardBg: 'rgba(15, 5, 29, 0.85)',
-        transparentBg: true,
-        fontSize: 16,
-        fontFamily: 'sans-serif',
-        borderRadius: 12,
-        titleText: 'Stream Goals & Tasks',
-        showTitle: true,
-        maxVisibleTasks: 6,
-        glowEffect: true,
-        compactMode: false,
-        soundEnabled: true,
-        animationSpeed: 'normal'
-      };
-    }
-  });
+      const savedSettings = localStorage.getItem('obs_todo_settings');
+      if (savedSettings) settings = { ...settings, ...JSON.parse(savedSettings) };
+    } catch(e) {}
 
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskCategory, setNewTaskCategory] = useState('Stream Goals');
-  const [activeCategoryFilter, setActiveCategoryFilter] = useState('All');
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [editingTaskId, setEditingTaskId] = useState(null);
-  const [editingTaskText, setEditingTaskText] = useState('');
-  const [previewBgMode, setPreviewBgMode] = useState('game');
-  const [lastCompletedId, setLastCompletedId] = useState(null);
+    let activeCategoryFilter = 'All';
+    let previewBgMode = 'game';
+    let editingTaskId = null;
+    let syncChannel = null;
 
-  const channelRef = useRef(null);
+    // Determine Mode
+    const urlParams = new URLSearchParams(window.location.search);
+    const isOverlayMode = urlParams.get('mode') === 'overlay' || window.location.hash.includes('mode=overlay');
+  </script>
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-      channelRef.current = new BroadcastChannel('obs_todo_sync_channel');
+  <div id="overlayView" class="hidden w-screen h-screen bg-transparent overflow-hidden">
+    <div id="pureOverlayContainer" class="w-full h-full p-4 flex flex-col transition-all duration-300 select-none overflow-hidden"></div>
+  </div>
+
+  <div id="managerView" class="hidden flex-1 flex flex-col">
+    <!-- Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-indigo-600/20 border border-indigo-500/30 rounded-xl text-indigo-400">
+          <i data-lucide="tv" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight text-white flex items-center gap-2">
+            OBS Stream To-Do Overlay
+            <span class="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-normal">v2.0</span>
+          </h1>
+          <p class="text-xs text-slate-400">Control dashboard and OBS browser source sync</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="hidden md:flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg p-1.5 px-3 text-xs font-mono text-slate-300">
+          <span class="text-slate-500">OBS Link:</span>
+          <span id="obsUrlDisplay" class="max-w-[220px] truncate text-indigo-300"></span>
+        </div>
+
+        <button id="copyObsBtn" onclick="copyObsLink()" class="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-xs transition-all shadow-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-900/30">
+          <i data-lucide="copy" class="w-4 h-4" id="copyIcon"></i>
+          <span id="copyBtnText">Copy OBS URL</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
       
-      channelRef.current.onmessage = (event) => {
+      <section class="lg:col-span-5 flex flex-col gap-5">
+        <!-- Add Task Form -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl">
+          <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4 text-indigo-400"></i> Add New Stream Task
+          </h2>
+          <form onsubmit="handleAddTask(event)" class="flex flex-col gap-3">
+            <input type="text" id="newTaskTitle" placeholder="e.g., Win 3 Battle Royale Matches..." required class="w-full bg-slate-950 border border-slate-700 focus:border-indigo-500 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition">
+            
+            <div class="flex gap-2">
+              <select id="newTaskCategory" class="bg-slate-950 border border-slate-700 text-slate-300 rounded-lg px-3 py-2 text-xs outline-none flex-1">
+                <option value="Stream Goals">Stream Goals</option>
+                <option value="Sub Goal">Sub Goal</option>
+                <option value="Games">Games</option>
+                <option value="General">General</option>
+                <option value="Break">Break</option>
+              </select>
+
+              <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+                <i data-lucide="plus" class="w-4 h-4"></i> Add Task
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Task List -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl flex-1 flex flex-col min-h-[350px]">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="list-todo" class="w-4 h-4 text-indigo-400"></i> Active Tasks (<span id="taskCount">0</span>)
+            </h2>
+
+            <select id="categoryFilter" onchange="changeFilter(this.value)" class="bg-slate-950 border border-slate-800 text-slate-400 text-xs rounded-md px-2 py-1 outline-none">
+              <option value="All">All Categories</option>
+              <option value="Stream Goals">Stream Goals</option>
+              <option value="Sub Goal">Sub Goal</option>
+              <option value="Games">Games</option>
+              <option value="General">General</option>
+              <option value="Break">Break</option>
+            </select>
+          </div>
+
+          <div id="managerTaskList" class="space-y-2 flex-1 overflow-y-auto max-h-[450px] pr-1"></div>
+        </div>
+      </section>
+
+      <section class="lg:col-span-4 bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col gap-5 overflow-y-auto max-h-[85vh]">
+        <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+          <i data-lucide="palette" class="w-4 h-4 text-purple-400"></i> Overlay Customizer
+        </h2>
+
+        <div>
+          <label class="text-xs text-slate-400 font-medium mb-2 block">Theme Presets</label>
+          <div id="presetsGrid" class="grid grid-cols-2 gap-2"></div>
+        </div>
+
+        <hr class="border-slate-800" />
+
+        <div class="space-y-3">
+          <label class="text-xs text-slate-400 font-medium block">Custom Colors</label>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <span class="text-[11px] text-slate-400 block mb-1">Text Color</span>
+              <div class="flex items-center gap-2 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
+                <input type="color" id="textColorPicker" onchange="updateSetting('textColor', this.value)" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0">
+                <span id="textColorHex" class="text-xs font-mono text-slate-300"></span>
+              </div>
+            </div>
+
+            <div>
+              <span class="text-[11px] text-slate-400 block mb-1">Accent Color</span>
+              <div class="flex items-center gap-2 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
+                <input type="color" id="accentColorPicker" onchange="updateSetting('accentColor', this.value)" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0">
+                <span id="accentColorHex" class="text-xs font-mono text-slate-300"></span>
+              </div>
+            </div>
+
+            <div>
+              <span class="text-[11px] text-slate-400 block mb-1">Background Color</span>
+              <div class="flex items-center gap-2 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
+                <input type="color" id="bgColorPicker" onchange="updateSetting('bgColor', this.value)" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0">
+                <span id="bgColorHex" class="text-xs font-mono text-slate-300"></span>
+              </div>
+            </div>
+
+            <div>
+              <span class="text-[11px] text-slate-400 block mb-1">Completed Color</span>
+              <div class="flex items-center gap-2 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
+                <input type="color" id="completedColorPicker" onchange="updateSetting('completedColor', this.value)" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0">
+                <span id="completedColorHex" class="text-xs font-mono text-slate-300"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-slate-800" />
+
+        <div class="space-y-4">
+          <div>
+            <div class="flex justify-between text-xs text-slate-400 mb-1">
+              <span>Font Size (<span id="fontSizeVal">16</span>px)</span>
+            </div>
+            <input type="range" id="fontSizeRange" min="12" max="24" oninput="updateSetting('fontSize', Number(this.value))" class="w-full accent-indigo-500">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs text-slate-400 mb-1">
+              <span>Border Radius (<span id="borderRadiusVal">12</span>px)</span>
+            </div>
+            <input type="range" id="borderRadiusRange" min="0" max="24" oninput="updateSetting('borderRadius', Number(this.value))" class="w-full accent-indigo-500">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs text-slate-400 mb-1">
+              <span>Max Visible Tasks (<span id="maxTasksVal">6</span>)</span>
+            </div>
+            <input type="range" id="maxTasksRange" min="3" max="12" oninput="updateSetting('maxVisibleTasks', Number(this.value))" class="w-full accent-indigo-500">
+          </div>
+
+          <div>
+            <label class="text-xs text-slate-400 mb-1 block">Title Heading Text</label>
+            <input type="text" id="titleTextInput" oninput="updateSetting('titleText', this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200">
+          </div>
+        </div>
+
+        <hr class="border-slate-800" />
+
+        <div class="space-y-2">
+          <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
+            <span>Transparent Background (OBS Ready)</span>
+            <input type="checkbox" id="transparentBgCheck" onchange="updateSetting('transparentBg', this.checked)" class="accent-indigo-500 w-4 h-4">
+          </label>
+
+          <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
+            <span>Glow Accent Effects</span>
+            <input type="checkbox" id="glowEffectCheck" onchange="updateSetting('glowEffect', this.checked)" class="accent-indigo-500 w-4 h-4">
+          </label>
+
+          <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
+            <span>Show Header Title</span>
+            <input type="checkbox" id="showTitleCheck" onchange="updateSetting('showTitle', this.checked)" class="accent-indigo-500 w-4 h-4">
+          </label>
+
+          <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
+            <span>Completion Audio Chime</span>
+            <input type="checkbox" id="soundEnabledCheck" onchange="updateSetting('soundEnabled', this.checked)" class="accent-indigo-500 w-4 h-4">
+          </label>
+        </div>
+      </section>
+
+      <section class="lg:col-span-3 flex flex-col gap-6">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="eye" class="w-4 h-4 text-emerald-400"></i> Live OBS Preview
+            </h2>
+            <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800 gap-1">
+              <button onclick="setPreviewBg('game')" id="bgBtnGame" class="px-2 py-0.5 text-[10px] rounded bg-indigo-600 text-white">Game</button>
+              <button onclick="setPreviewBg('green')" id="bgBtnGreen" class="px-2 py-0.5 text-[10px] rounded text-slate-400">Green</button>
+              <button onclick="setPreviewBg('dark')" id="bgBtnDark" class="px-2 py-0.5 text-[10px] rounded text-slate-400">Dark</button>
+            </div>
+          </div>
+
+          <div id="previewWrapper" class="w-full h-[360px] rounded-lg border border-slate-700 relative overflow-hidden transition-all bg-gradient-to-br from-indigo-900 via-slate-900 to-purple-950">
+            <div id="previewGridBg" class="absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
+            <div id="previewContainer" class="w-full h-full relative z-10"></div>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl flex-1">
+          <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <i data-lucide="help-circle" class="w-4 h-4 text-indigo-400"></i> OBS Setup Instructions
+          </h3>
+          <ol class="text-xs text-slate-400 space-y-2.5 list-decimal list-inside">
+            <li>Open <strong>OBS Studio</strong> or <strong>Streamlabs OBS</strong>.</li>
+            <li>Add a new source: Select <strong>Browser</strong>.</li>
+            <li>Click <strong>"Copy OBS URL"</strong> at top right and paste into <strong>URL</strong>.</li>
+            <li>Set Width: <code class="text-indigo-300 font-mono">400</code>, Height: <code class="text-indigo-300 font-mono">600</code>.</li>
+            <li>Check <strong>"Refresh browser when scene becomes active"</strong>.</li>
+            <li>Done! Edit tasks here; your stream overlay syncs in real-time.</li>
+          </ol>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    // Initialize BroadcastChannel
+    if ('BroadcastChannel' in window) {
+      syncChannel = new BroadcastChannel('obs_todo_sync_channel');
+      syncChannel.onmessage = (event) => {
         if (event.data?.type === 'SYNC_ALL') {
-          if (event.data.tasks) setTasks(event.data.tasks);
-          if (event.data.settings) setSettings(event.data.settings);
+          if (event.data.tasks) tasks = event.data.tasks;
+          if (event.data.settings) settings = event.data.settings;
+          renderAll();
         }
       };
     }
 
-    const handleStorageChange = (e) => {
+    // Storage Event Listener across windows
+    window.addEventListener('storage', (e) => {
       if (e.key === 'obs_todo_tasks' && e.newValue) {
-        setTasks(JSON.parse(e.newValue));
+        tasks = JSON.parse(e.newValue);
+        renderAll();
       }
       if (e.key === 'obs_todo_settings' && e.newValue) {
-        setSettings(JSON.parse(e.newValue));
+        settings = JSON.parse(e.newValue);
+        renderAll();
       }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      if (channelRef.current) channelRef.current.close();
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
-  const updateTasksAndSync = (newTasks) => {
-    setTasks(newTasks);
-    try {
-      localStorage.setItem('obs_todo_tasks', JSON.stringify(newTasks));
-      if (channelRef.current) {
-        channelRef.current.postMessage({ type: 'SYNC_ALL', tasks: newTasks, settings });
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const updateSettingsAndSync = (newSettings) => {
-    setSettings(newSettings);
-    try {
-      localStorage.setItem('obs_todo_settings', JSON.stringify(newSettings));
-      if (channelRef.current) {
-        channelRef.current.postMessage({ type: 'SYNC_ALL', tasks, settings: newSettings });
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const playAudioCue = () => {
-    if (!settings.soundEnabled) return;
-    try {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15);
-
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.16);
-    } catch (e) {}
-  };
-
-  const handleAddTask = (e) => {
-    e.preventDefault();
-    if (!newTaskTitle.trim()) return;
-    const newTask = {
-      id: Date.now().toString(),
-      title: newTaskTitle.trim(),
-      category: newTaskCategory,
-      completed: false,
-      priority: 'medium'
-    };
-    const updated = [newTask, ...tasks];
-    updateTasksAndSync(updated);
-    setNewTaskTitle('');
-  };
-
-  const handleToggleTask = (id) => {
-    const updated = tasks.map(t => {
-      if (t.id === id) {
-        const isNowCompleted = !t.completed;
-        if (isNowCompleted) {
-          playAudioCue();
-          setLastCompletedId(id);
-          setTimeout(() => setLastCompletedId(null), 1000);
-        }
-        return { ...t, completed: isNowCompleted };
-      }
-      return t;
     });
-    updateTasksAndSync(updated);
-  };
 
-  const handleDeleteTask = (id) => {
-    const updated = tasks.filter(t => t.id !== id);
-    updateTasksAndSync(updated);
-  };
+    function saveAndSync() {
+      try {
+        localStorage.setItem('obs_todo_tasks', JSON.stringify(tasks));
+        localStorage.setItem('obs_todo_settings', JSON.stringify(settings));
+        if (syncChannel) {
+          syncChannel.postMessage({ type: 'SYNC_ALL', tasks, settings });
+        }
+      } catch(e) {}
+      renderAll();
+    }
 
-  const handleStartEdit = (task) => {
-    setEditingTaskId(task.id);
-    setEditingTaskText(task.title);
-  };
+    function playAudioCue() {
+      if (!settings.soundEnabled) return;
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15);
 
-  const handleSaveEdit = (id) => {
-    if (!editingTaskText.trim()) return;
-    const updated = tasks.map(t => t.id === id ? { ...t, title: editingTaskText.trim() } : t);
-    updateTasksAndSync(updated);
-    setEditingTaskId(null);
-  };
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
 
-  const handleMoveTask = (index, direction) => {
-    const newTasks = [...tasks];
-    const targetIndex = index + direction;
-    if (targetIndex < 0 || targetIndex >= newTasks.length) return;
-    const [moved] = newTasks.splice(index, 1);
-    newTasks.splice(targetIndex, 0, moved);
-    updateTasksAndSync(newTasks);
-  };
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
 
-  const applyPresetTheme = (preset) => {
-    const updated = {
-      ...settings,
-      themeId: preset.id,
-      bgColor: preset.bg,
-      textColor: preset.text,
-      accentColor: preset.accent,
-      completedColor: preset.completed,
-      cardBg: preset.cardBg,
-      fontFamily: preset.font,
-      transparentBg: preset.transparent,
-      glowEffect: preset.glow
-    };
-    updateSettingsAndSync(updated);
-  };
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.16);
+      } catch (e) {}
+    }
 
-  const generatedObsUrl = useMemo(() => {
-    if (typeof window === 'undefined') return '';
-    const baseUrl = window.location.origin + window.location.pathname;
-    return `${baseUrl}?mode=overlay`;
-  }, []);
+    function handleAddTask(e) {
+      e.preventDefault();
+      const titleInput = document.getElementById('newTaskTitle');
+      const catInput = document.getElementById('newTaskCategory');
+      const title = titleInput.value.trim();
+      if (!title) return;
 
-  const handleCopyObsLink = () => {
-    navigator.clipboard.writeText(generatedObsUrl);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2500);
-  };
+      tasks.unshift({
+        id: Date.now().toString(),
+        title: title,
+        category: catInput.value,
+        completed: false
+      });
 
-  const filteredTasks = tasks.filter(task => {
-    if (activeCategoryFilter === 'All') return true;
-    return task.category === activeCategoryFilter;
-  });
+      titleInput.value = '';
+      saveAndSync();
+    }
 
-  const visibleTasks = filteredTasks.slice(0, settings.maxVisibleTasks);
+    function toggleTask(id) {
+      tasks = tasks.map(t => {
+        if (t.id === id) {
+          const completed = !t.completed;
+          if (completed) playAudioCue();
+          return { ...t, completed };
+        }
+        return t;
+      });
+      saveAndSync();
+    }
 
-  const renderOverlayList = (isLivePreview = false) => {
-    return (
-      <div 
-        className="w-full h-full p-4 flex flex-col transition-all duration-300 select-none overflow-hidden"
-        style={{
-          fontFamily: settings.fontFamily,
-          color: settings.textColor,
-          backgroundColor: isLivePreview 
-            ? 'transparent' 
-            : (settings.transparentBg ? 'transparent' : settings.bgColor)
-        }}
-      >
-        {settings.showTitle && (
-          <div className="mb-3 flex items-center justify-between border-b pb-2" style={{ borderColor: `${settings.accentColor}40` }}>
-            <h2 
-              className="font-bold uppercase tracking-wider flex items-center gap-2"
-              style={{ 
-                fontSize: `${settings.fontSize * 1.1}px`,
-                color: settings.textColor,
-                textShadow: settings.glowEffect ? `0 0 10px ${settings.accentColor}aa` : 'none'
-              }}
-            >
-              <Zap className="w-5 h-5" style={{ color: settings.accentColor }} />
-              {settings.titleText || 'Stream Goals & Tasks'}
-            </h2>
-            <span 
-              className="text-xs px-2 py-0.5 rounded-full font-medium"
-              style={{ 
-                backgroundColor: `${settings.accentColor}20`, 
-                color: settings.accentColor,
-                border: `1px solid ${settings.accentColor}50`
-              }}
-            >
-              {tasks.filter(t => t.completed).length}/{tasks.length}
+    function deleteTask(id) {
+      tasks = tasks.filter(t => t.id !== id);
+      saveAndSync();
+    }
+
+    function moveTask(index, direction) {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= tasks.length) return;
+      const moved = tasks.splice(index, 1)[0];
+      tasks.splice(targetIndex, 0, moved);
+      saveAndSync();
+    }
+
+    function updateSetting(key, val) {
+      settings[key] = val;
+      saveAndSync();
+    }
+
+    function applyPresetTheme(presetId) {
+      const preset = THEME_PRESETS.find(p => p.id === presetId);
+      if (!preset) return;
+
+      settings = {
+        ...settings,
+        themeId: preset.id,
+        bgColor: preset.bg,
+        textColor: preset.text,
+        accentColor: preset.accent,
+        completedColor: preset.completed,
+        cardBg: preset.cardBg,
+        fontFamily: preset.font,
+        transparentBg: preset.transparent,
+        glowEffect: preset.glow,
+        borderRadius: preset.borderRadius
+      };
+      saveAndSync();
+    }
+
+    function changeFilter(val) {
+      activeCategoryFilter = val;
+      renderManagerTasks();
+    }
+
+    function setPreviewBg(mode) {
+      previewBgMode = mode;
+      const wrapper = document.getElementById('previewWrapper');
+      const grid = document.getElementById('previewGridBg');
+
+      document.getElementById('bgBtnGame').className = `px-2 py-0.5 text-[10px] rounded ${mode === 'game' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`;
+      document.getElementById('bgBtnGreen').className = `px-2 py-0.5 text-[10px] rounded ${mode === 'green' ? 'bg-emerald-600 text-white' : 'text-slate-400'}`;
+      document.getElementById('bgBtnDark').className = `px-2 py-0.5 text-[10px] rounded ${mode === 'dark' ? 'bg-slate-700 text-white' : 'text-slate-400'}`;
+
+      if (mode === 'game') {
+        wrapper.className = 'w-full h-[360px] rounded-lg border border-slate-700 relative overflow-hidden transition-all bg-gradient-to-br from-indigo-900 via-slate-900 to-purple-950';
+        grid.style.display = 'block';
+      } else if (mode === 'green') {
+        wrapper.className = 'w-full h-[360px] rounded-lg border border-slate-700 relative overflow-hidden transition-all bg-emerald-500';
+        grid.style.display = 'none';
+      } else {
+        wrapper.className = 'w-full h-[360px] rounded-lg border border-slate-700 relative overflow-hidden transition-all bg-slate-950';
+        grid.style.display = 'none';
+      }
+    }
+
+    function getObsUrl() {
+      const baseUrl = window.location.origin + window.location.pathname;
+      return `${baseUrl}?mode=overlay`;
+    }
+
+    function copyObsLink() {
+      const url = getObsUrl();
+      document.execCommand('copy');
+      navigator.clipboard.writeText(url).catch(() => {});
+
+      const btnText = document.getElementById('copyBtnText');
+      const copyBtn = document.getElementById('copyObsBtn');
+      
+      btnText.innerText = 'Copied to Clipboard!';
+      copyBtn.className = 'flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-xs transition-all shadow-lg bg-emerald-600 text-white shadow-emerald-900/30';
+
+      setTimeout(() => {
+        btnText.innerText = 'Copy OBS URL';
+        copyBtn.className = 'flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-xs transition-all shadow-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-900/30';
+      }, 2500);
+    }
+
+    function buildOverlayHTML(isLivePreview = false) {
+      const filtered = tasks.filter(t => activeCategoryFilter === 'All' || t.category === activeCategoryFilter);
+      const visible = filtered.slice(0, settings.maxVisibleTasks);
+      const completedCount = tasks.filter(t => t.completed).length;
+
+      const titleHeader = settings.showTitle ? `
+        <div class="mb-3 flex items-center justify-between border-b pb-2" style="border-color: ${settings.accentColor}40">
+          <h2 class="font-bold uppercase tracking-wider flex items-center gap-2" style="font-size: ${settings.fontSize * 1.1}px; color: ${settings.textColor}; text-shadow: ${settings.glowEffect ? `0 0 10px ${settings.accentColor}aa` : 'none'}">
+            <i data-lucide="zap" class="w-5 h-5" style="color: ${settings.accentColor}"></i>
+            ${settings.titleText || 'Stream Goals & Tasks'}
+          </h2>
+          <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background-color: ${settings.accentColor}20; color: ${settings.accentColor}; border: 1px solid ${settings.accentColor}50">
+            ${completedCount}/${tasks.length}
+          </span>
+        </div>
+      ` : '';
+
+      let itemsHTML = '';
+      if (visible.length === 0) {
+        itemsHTML = '<div class="text-center py-6 opacity-60 text-sm">✨ No tasks added yet!</div>';
+      } else {
+        itemsHTML = visible.map(t => `
+          <div class="flex items-center gap-2.5 p-2.5 transition-all duration-300 border" style="background-color: ${settings.cardBg}; border-radius: ${settings.borderRadius}px; border-color: ${t.completed ? 'transparent' : settings.accentColor + '30'}; box-shadow: ${settings.glowEffect && !t.completed ? `0 0 8px ${settings.accentColor}20` : 'none'}">
+            <button onclick="toggleTask('${t.id}')" class="flex-shrink-0 focus:outline-none transition-transform active:scale-90">
+              <i data-lucide="${t.completed ? 'check-circle-2' : 'circle'}" class="w-5 h-5" style="color: ${t.completed ? settings.completedColor : settings.accentColor}"></i>
+            </button>
+            <div class="flex-1 min-w-0">
+              <p class="font-medium truncate transition-all duration-200" style="font-size: ${settings.fontSize}px; color: ${t.completed ? settings.completedColor : settings.textColor}; text-decoration: ${t.completed ? 'line-through' : 'none'}; opacity: ${t.completed ? 0.6 : 1}">
+                ${t.title}
+              </p>
+            </div>
+            ${t.category && t.category !== 'General' ? `<span class="text-[10px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider opacity-70" style="background-color: ${settings.accentColor}15; color: ${settings.accentColor}">${t.category}</span>` : ''}
+          </div>
+        `).join('');
+      }
+
+      const containerBg = isLivePreview ? 'transparent' : (settings.transparentBg ? 'transparent' : settings.bgColor);
+
+      return `
+        <div class="w-full h-full p-4 flex flex-col transition-all duration-300 select-none overflow-hidden" style="font-family: ${settings.fontFamily}; color: ${settings.textColor}; background-color: ${containerBg}">
+          ${titleHeader}
+          <div class="space-y-2 flex-1 overflow-y-auto pr-1">
+            ${itemsHTML}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderManagerTasks() {
+      const listEl = document.getElementById('managerTaskList');
+      const filtered = tasks.filter(t => activeCategoryFilter === 'All' || t.category === activeCategoryFilter);
+      document.getElementById('taskCount').innerText = tasks.length;
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = '<div class="text-center py-12 text-slate-500 text-sm">No tasks found in this view.</div>';
+        return;
+      }
+
+      listEl.innerHTML = filtered.map((t, idx) => `
+        <div class="group bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 rounded-lg p-3 flex items-center gap-3 transition">
+          <div class="flex flex-col text-slate-600 opacity-0 group-hover:opacity-100 transition">
+            <button onclick="moveTask(${idx}, -1)" class="hover:text-slate-300 text-[10px]">▲</button>
+            <button onclick="moveTask(${idx}, 1)" class="hover:text-slate-300 text-[10px]">▼</button>
+          </div>
+
+          <button onclick="toggleTask('${t.id}')" class="text-slate-400 hover:text-indigo-400">
+            <i data-lucide="${t.completed ? 'check-circle-2' : 'circle'}" class="w-5 h-5 ${t.completed ? 'text-emerald-400' : ''}"></i>
+          </button>
+
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-medium truncate ${t.completed ? 'line-through text-slate-500' : 'text-slate-200'}">
+              ${t.title}
+            </p>
+            <span class="text-[10px] text-indigo-400/80 uppercase tracking-wide font-semibold">
+              ${t.category}
             </span>
           </div>
-        )}
 
-        <div className="space-y-2 flex-1 overflow-y-auto pr-1">
-          {visibleTasks.length === 0 ? (
-            <div className="text-center py-6 opacity-60 text-sm">
-              ✨ No tasks added yet!
-            </div>
-          ) : (
-            visibleTasks.map((task) => {
-              const isJustCompleted = lastCompletedId === task.id;
-              return (
-                <div
-                  key={task.id}
-                  className={`flex items-center gap-2.5 p-2.5 transition-all duration-300 border ${
-                    isJustCompleted ? 'scale-105' : 'scale-100'
-                  }`}
-                  style={{
-                    backgroundColor: settings.cardBg,
-                    borderRadius: `${settings.borderRadius}px`,
-                    borderColor: task.completed ? 'transparent' : `${settings.accentColor}30`,
-                    boxShadow: settings.glowEffect && !task.completed ? `0 0 8px ${settings.accentColor}20` : 'none'
-                  }}
-                >
-                  <button 
-                    onClick={() => handleToggleTask(task.id)}
-                    className="flex-shrink-0 focus:outline-none transition-transform active:scale-90"
-                  >
-                    {task.completed ? (
-                      <CheckCircle2 className="w-5 h-5" style={{ color: settings.completedColor }} />
-                    ) : (
-                      <Circle className="w-5 h-5" style={{ color: settings.accentColor }} />
-                    )}
-                  </button>
-
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className="font-medium truncate transition-all duration-200"
-                      style={{
-                        fontSize: `${settings.fontSize}px`,
-                        color: task.completed ? settings.completedColor : settings.textColor,
-                        textDecoration: task.completed ? 'line-through' : 'none',
-                        opacity: task.completed ? 0.6 : 1
-                      }}
-                    >
-                      {task.title}
-                    </p>
-                  </div>
-
-                  {task.category && task.category !== 'General' && (
-                    <span 
-                      className="text-[10px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider opacity-70"
-                      style={{ backgroundColor: `${settings.accentColor}15`, color: settings.accentColor }}
-                    >
-                      {task.category}
-                    </span>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Pure OBS Overlay View
-  if (mode === 'overlay') {
-    return (
-      <div className="w-screen h-screen bg-transparent overflow-hidden">
-        {renderOverlayList(false)}
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-600/20 border border-indigo-500/30 rounded-xl text-indigo-400">
-            <Tv className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="font-bold text-lg leading-tight text-white flex items-center gap-2">
-              OBS Stream To-Do Overlay
-              <span className="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-normal">
-                v2.0
-              </span>
-            </h1>
-            <p className="text-xs text-slate-400">Control dashboard and OBS browser source sync</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg p-1.5 px-3 text-xs font-mono text-slate-300">
-            <span className="text-slate-500">OBS Link:</span>
-            <span className="max-w-[220px] truncate text-indigo-300">{generatedObsUrl}</span>
-          </div>
-
-          <button
-            onClick={handleCopyObsLink}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-xs transition-all shadow-lg ${
-              copiedLink 
-                ? 'bg-emerald-600 text-white shadow-emerald-900/30' 
-                : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-900/30'
-            }`}
-          >
-            {copiedLink ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            {copiedLink ? 'Copied to Clipboard!' : 'Copy OBS URL'}
+          <button onclick="deleteTask('${t.id}')" class="text-slate-500 hover:text-rose-400 p-1 rounded transition opacity-0 group-hover:opacity-100">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
           </button>
         </div>
-      </header>
+      `).join('');
 
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Task Management Section */}
-        <section className="lg:col-span-5 flex flex-col gap-5">
-          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl">
-            <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Plus className="w-4 h-4 text-indigo-400" /> Add New Stream Task
-            </h2>
-            <form onSubmit={handleAddTask} className="flex flex-col gap-3">
-              <input
-                type="text"
-                placeholder="e.g., Win 3 Battle Royale Matches..."
-                value={newTaskTitle}
-                onChange={(e) => setNewTaskTitle(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 focus:border-indigo-500 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition"
-              />
-              
-              <div className="flex gap-2">
-                <select
-                  value={newTaskCategory}
-                  onChange={(e) => setNewTaskCategory(e.target.value)}
-                  className="bg-slate-950 border border-slate-700 text-slate-300 rounded-lg px-3 py-2 text-xs outline-none flex-1"
-                >
-                  {CATEGORIES.filter(c => c !== 'All').map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+      lucide.createIcons();
+    }
 
-                <button
-                  type="submit"
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
-                >
-                  <Plus className="w-4 h-4" /> Add Task
-                </button>
-              </div>
-            </form>
+    function renderPresets() {
+      const container = document.getElementById('presetsGrid');
+      container.innerHTML = THEME_PRESETS.map(p => `
+        <button onclick="applyPresetTheme('${p.id}')" class="p-2.5 rounded-lg border text-left text-xs transition flex flex-col gap-1 ${settings.themeId === p.id ? 'border-indigo-500 bg-indigo-950/40 text-white' : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700'}">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold">${p.name}</span>
+            <span class="w-3 h-3 rounded-full" style="background-color: ${p.accent}"></span>
           </div>
-
-          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl flex-1 flex flex-col min-h-[350px]">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                <ListTodo className="w-4 h-4 text-indigo-400" /> Active Tasks ({tasks.length})
-              </h2>
-
-              <select
-                value={activeCategoryFilter}
-                onChange={(e) => setActiveCategoryFilter(e.target.value)}
-                className="bg-slate-950 border border-slate-800 text-slate-400 text-xs rounded-md px-2 py-1 outline-none"
-              >
-                {CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2 flex-1 overflow-y-auto max-h-[450px] pr-1">
-              {filteredTasks.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 text-sm">
-                  No tasks found in this view.
-                </div>
-              ) : (
-                filteredTasks.map((task, idx) => (
-                  <div
-                    key={task.id}
-                    className="group bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 rounded-lg p-3 flex items-center gap-3 transition"
-                  >
-                    <div className="flex flex-col text-slate-600 opacity-0 group-hover:opacity-100 transition">
-                      <button onClick={() => handleMoveTask(idx, -1)} className="hover:text-slate-300 text-[10px]">▲</button>
-                      <button onClick={() => handleMoveTask(idx, 1)} className="hover:text-slate-300 text-[10px]">▼</button>
-                    </div>
-
-                    <button onClick={() => handleToggleTask(task.id)} className="text-slate-400 hover:text-indigo-400">
-                      {task.completed ? (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                      ) : (
-                        <Circle className="w-5 h-5" />
-                      )}
-                    </button>
-
-                    <div className="flex-1 min-w-0">
-                      {editingTaskId === task.id ? (
-                        <input
-                          type="text"
-                          value={editingTaskText}
-                          onChange={(e) => setEditingTaskText(e.target.value)}
-                          onBlur={() => handleSaveEdit(task.id)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit(task.id)}
-                          autoFocus
-                          className="bg-slate-900 border border-indigo-500 rounded px-2 py-1 text-xs text-white w-full outline-none"
-                        />
-                      ) : (
-                        <div>
-                          <p 
-                            onClick={() => handleStartEdit(task)}
-                            className={`text-xs font-medium cursor-pointer truncate ${task.completed ? 'line-through text-slate-500' : 'text-slate-200'}`}
-                          >
-                            {task.title}
-                          </p>
-                          <span className="text-[10px] text-indigo-400/80 uppercase tracking-wide font-semibold">
-                            {task.category}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={() => handleDeleteTask(task.id)}
-                      className="text-slate-500 hover:text-rose-400 p-1 rounded transition opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
+          <div class="flex gap-1 h-1.5 rounded overflow-hidden w-full">
+            <div style="background-color: ${p.bg}" class="flex-1"></div>
+            <div style="background-color: ${p.text}" class="flex-1"></div>
+            <div style="background-color: ${p.accent}" class="flex-1"></div>
           </div>
-        </section>
+        </button>
+      `).join('');
+    }
 
-        {/* Customizer Section */}
-        <section className="lg:col-span-4 bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col gap-5 overflow-y-auto max-h-[85vh]">
-          <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-            <Palette className="w-4 h-4 text-purple-400" /> Overlay Customizer
-          </h2>
+    function syncControls() {
+      document.getElementById('textColorPicker').value = settings.textColor;
+      document.getElementById('textColorHex').innerText = settings.textColor;
 
-          <div>
-            <label className="text-xs text-slate-400 font-medium mb-2 block">Theme Presets</label>
-            <div className="grid grid-cols-2 gap-2">
-              {THEME_PRESETS.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => applyPresetTheme(p)}
-                  className={`p-2.5 rounded-lg border text-left text-xs transition flex flex-col gap-1 ${
-                    settings.themeId === p.id 
-                      ? 'border-indigo-500 bg-indigo-950/40 text-white' 
-                      : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">{p.name}</span>
-                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: p.accent }} />
-                  </div>
-                  <div className="flex gap-1 h-1.5 rounded overflow-hidden w-full">
-                    <div style={{ backgroundColor: p.bg }} className="flex-1" />
-                    <div style={{ backgroundColor: p.text }} className="flex-1" />
-                    <div style={{ backgroundColor: p.accent }} className="flex-1" />
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
+      document.getElementById('accentColorPicker').value = settings.accentColor;
+      document.getElementById('accentColorHex').innerText = settings.accentColor;
 
-          <hr className="border-slate-800" />
+      document.getElementById('bgColorPicker').value = settings.bgColor;
+      document.getElementById('bgColorHex').innerText = settings.bgColor;
 
-          <div className="space-y-3">
-            <label className="text-xs text-slate-400 font-medium block">Custom Colors</label>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <span className="text-[11px] text-slate-400 block mb-1">Text Color</span>
-                <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
-                  <input
-                    type="color"
-                    value={settings.textColor}
-                    onChange={(e) => updateSettingsAndSync({ ...settings, textColor: e.target.value })}
-                    className="w-6 h-6 rounded cursor-pointer bg-transparent border-0"
-                  />
-                  <span className="text-xs font-mono text-slate-300">{settings.textColor}</span>
-                </div>
-              </div>
+      document.getElementById('completedColorPicker').value = settings.completedColor;
+      document.getElementById('completedColorHex').innerText = settings.completedColor;
 
-              <div>
-                <span className="text-[11px] text-slate-400 block mb-1">Accent Color</span>
-                <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
-                  <input
-                    type="color"
-                    value={settings.accentColor}
-                    onChange={(e) => updateSettingsAndSync({ ...settings, accentColor: e.target.value })}
-                    className="w-6 h-6 rounded cursor-pointer bg-transparent border-0"
-                  />
-                  <span className="text-xs font-mono text-slate-300">{settings.accentColor}</span>
-                </div>
-              </div>
+      document.getElementById('fontSizeRange').value = settings.fontSize;
+      document.getElementById('fontSizeVal').innerText = settings.fontSize;
 
-              <div>
-                <span className="text-[11px] text-slate-400 block mb-1">Background Color</span>
-                <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
-                  <input
-                    type="color"
-                    value={settings.bgColor}
-                    onChange={(e) => updateSettingsAndSync({ ...settings, bgColor: e.target.value })}
-                    className="w-6 h-6 rounded cursor-pointer bg-transparent border-0"
-                  />
-                  <span className="text-xs font-mono text-slate-300">{settings.bgColor}</span>
-                </div>
-              </div>
+      document.getElementById('borderRadiusRange').value = settings.borderRadius;
+      document.getElementById('borderRadiusVal').innerText = settings.borderRadius;
 
-              <div>
-                <span className="text-[11px] text-slate-400 block mb-1">Completed Color</span>
-                <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
-                  <input
-                    type="color"
-                    value={settings.completedColor}
-                    onChange={(e) => updateSettingsAndSync({ ...settings, completedColor: e.target.value })}
-                    className="w-6 h-6 rounded cursor-pointer bg-transparent border-0"
-                  />
-                  <span className="text-xs font-mono text-slate-300">{settings.completedColor}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+      document.getElementById('maxTasksRange').value = settings.maxVisibleTasks;
+      document.getElementById('maxTasksVal').innerText = settings.maxVisibleTasks;
 
-          <hr className="border-slate-800" />
+      document.getElementById('titleTextInput').value = settings.titleText;
 
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-xs text-slate-400 mb-1">
-                <span>Font Size ({settings.fontSize}px)</span>
-              </div>
-              <input
-                type="range"
-                min="12"
-                max="24"
-                value={settings.fontSize}
-                onChange={(e) => updateSettingsAndSync({ ...settings, fontSize: Number(e.target.value) })}
-                className="w-full accent-indigo-500"
-              />
-            </div>
+      document.getElementById('transparentBgCheck').checked = settings.transparentBg;
+      document.getElementById('glowEffectCheck').checked = settings.glowEffect;
+      document.getElementById('showTitleCheck').checked = settings.showTitle;
+      document.getElementById('soundEnabledCheck').checked = settings.soundEnabled;
+    }
 
-            <div>
-              <div className="flex justify-between text-xs text-slate-400 mb-1">
-                <span>Border Radius ({settings.borderRadius}px)</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="24"
-                value={settings.borderRadius}
-                onChange={(e) => updateSettingsAndSync({ ...settings, borderRadius: Number(e.target.value) })}
-                className="w-full accent-indigo-500"
-              />
-            </div>
+    function renderAll() {
+      if (isOverlayMode) {
+        document.getElementById('pureOverlayContainer').innerHTML = buildOverlayHTML(false);
+      } else {
+        renderManagerTasks();
+        renderPresets();
+        syncControls();
+        document.getElementById('previewContainer').innerHTML = buildOverlayHTML(true);
+        document.getElementById('obsUrlDisplay').innerText = getObsUrl();
+      }
+      lucide.createIcons();
+    }
 
-            <div>
-              <div className="flex justify-between text-xs text-slate-400 mb-1">
-                <span>Max Visible Tasks ({settings.maxVisibleTasks})</span>
-              </div>
-              <input
-                type="range"
-                min="3"
-                max="12"
-                value={settings.maxVisibleTasks}
-                onChange={(e) => updateSettingsAndSync({ ...settings, maxVisibleTasks: Number(e.target.value) })}
-                className="w-full accent-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-slate-400 mb-1 block">Title Heading Text</label>
-              <input
-                type="text"
-                value={settings.titleText}
-                onChange={(e) => updateSettingsAndSync({ ...settings, titleText: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200"
-              />
-            </div>
-          </div>
-
-          <hr className="border-slate-800" />
-
-          <div className="space-y-2">
-            <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
-              <span>Transparent Background (OBS Ready)</span>
-              <input
-                type="checkbox"
-                checked={settings.transparentBg}
-                onChange={(e) => updateSettingsAndSync({ ...settings, transparentBg: e.target.checked })}
-                className="accent-indigo-500 w-4 h-4"
-              />
-            </label>
-
-            <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
-              <span>Glow Accent Effects</span>
-              <input
-                type="checkbox"
-                checked={settings.glowEffect}
-                onChange={(e) => updateSettingsAndSync({ ...settings, glowEffect: e.target.checked })}
-                className="accent-indigo-500 w-4 h-4"
-              />
-            </label>
-
-            <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
-              <span>Show Header Title</span>
-              <input
-                type="checkbox"
-                checked={settings.showTitle}
-                onChange={(e) => updateSettingsAndSync({ ...settings, showTitle: e.target.checked })}
-                className="accent-indigo-500 w-4 h-4"
-              />
-            </label>
-
-            <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
-              <span>Completion Audio Chime</span>
-              <input
-                type="checkbox"
-                checked={settings.soundEnabled}
-                onChange={(e) => updateSettingsAndSync({ ...settings, soundEnabled: e.target.checked })}
-                className="accent-indigo-500 w-4 h-4"
-              />
-            </label>
-          </div>
-        </section>
-
-        {/* Preview and Instructions Section */}
-        <section className="lg:col-span-3 flex flex-col gap-6">
-          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                <Eye className="w-4 h-4 text-emerald-400" /> Live OBS Preview
-              </h2>
-              <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-800 gap-1">
-                <button
-                  onClick={() => setPreviewBgMode('game')}
-                  className={`px-2 py-0.5 text-[10px] rounded ${
-                    previewBgMode === 'game' ? 'bg-indigo-600 text-white' : 'text-slate-400'
-                  }`}
-                >
-                  Game
-                </button>
-                <button
-                  onClick={() => setPreviewBgMode('green')}
-                  className={`px-2 py-0.5 text-[10px] rounded ${
-                    previewBgMode === 'green' ? 'bg-emerald-600 text-white' : 'text-slate-400'
-                  }`}
-                >
-                  Green
-                </button>
-                <button
-                  onClick={() => setPreviewBgMode('dark')}
-                  className={`px-2 py-0.5 text-[10px] rounded ${
-                    previewBgMode === 'dark' ? 'bg-slate-700 text-white' : 'text-slate-400'
-                  }`}
-                >
-                  Dark
-                </button>
-              </div>
-            </div>
-
-            <div 
-              className={`w-full h-[360px] rounded-lg border border-slate-700 relative overflow-hidden transition-all ${
-                previewBgMode === 'game' 
-                  ? 'bg-gradient-to-br from-indigo-900 via-slate-900 to-purple-950' 
-                  : previewBgMode === 'green' 
-                  ? 'bg-emerald-500' 
-                  : 'bg-slate-950'
-              }`}
-            >
-              {previewBgMode === 'game' && (
-                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
-              )}
-
-              <div className="w-full h-full relative z-10">
-                {renderOverlayList(true)}
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl flex-1">
-            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <HelpCircle className="w-4 h-4 text-indigo-400" /> OBS Setup Instructions
-            </h3>
-            <ol className="text-xs text-slate-400 space-y-2.5 list-decimal list-inside">
-              <li>Open <strong>OBS Studio</strong> or <strong>Streamlabs OBS</strong>.</li>
-              <li>Add a new source: Select <strong>Browser</strong>.</li>
-              <li>Click <strong>"Copy OBS URL"</strong> at top right and paste into <strong>URL</strong>.</li>
-              <li>Set Width: <code className="text-indigo-300 font-mono">400</code>, Height: <code className="text-indigo-300 font-mono">600</code>.</li>
-              <li>Check <strong>"Refresh browser when scene becomes active"</strong>.</li>
-              <li>Done! Edit tasks here; your stream overlay syncs in real-time.</li>
-            </ol>
-          </div>
-        </section>
-
-      </main>
-    </div>
-  );
-}
+    // Initialization on Page Load
+    window.onload = function() {
+      if (isOverlayMode) {
+        document.getElementById('overlayView').classList.remove('hidden');
+      } else {
+        document.getElementById('managerView').classList.remove('hidden');
+      }
+      renderAll();
+    };
+  </script>
+</body>
+</html>
