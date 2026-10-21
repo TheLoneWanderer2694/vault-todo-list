@@ -98,7 +98,7 @@
 
     const CATEGORIES = ['All', 'Stream Goals', 'Sub Goal', 'Games', 'General', 'Break'];
 
-    // Load initial state from LocalStorage
+    // Load initial state from LocalStorage (starts empty if no saved tasks)
     let tasks = [];
     try {
       const savedTasks = localStorage.getItem('obs_todo_tasks');
@@ -140,10 +140,12 @@
     const isOverlayMode = urlParams.get('mode') === 'overlay' || window.location.hash.includes('mode=overlay');
   </script>
 
+  <!-- Pure Overlay Mode View -->
   <div id="overlayView" class="hidden w-screen h-screen bg-transparent overflow-hidden">
     <div id="pureOverlayContainer" class="w-full h-full p-4 flex flex-col transition-all duration-300 select-none overflow-hidden"></div>
   </div>
 
+  <!-- Manager / Control Dashboard View -->
   <div id="managerView" class="hidden flex-1 flex flex-col">
     <!-- Header -->
     <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between">
@@ -173,9 +175,10 @@
       </div>
     </header>
 
-    <!-- Main Content -->
+    <!-- Main Content Grid -->
     <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
       
+      <!-- Task Creation and Management Column -->
       <section class="lg:col-span-5 flex flex-col gap-5">
         <!-- Add Task Form -->
         <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl">
@@ -222,6 +225,7 @@
         </div>
       </section>
 
+      <!-- Theme & Overlay Customizer Column -->
       <section class="lg:col-span-4 bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col gap-5 overflow-y-auto max-h-[85vh]">
         <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
           <i data-lucide="palette" class="w-4 h-4 text-purple-400"></i> Overlay Customizer
@@ -240,7 +244,7 @@
             <div>
               <span class="text-[11px] text-slate-400 block mb-1">Text Color</span>
               <div class="flex items-center gap-2 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
-                <input type="color" id="textColorPicker" oninput="updateSetting('textColor', this.value)" onchange="updateSetting('textColor', this.value)" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0">
+                <input type="color" id="textColorPicker" oninput="updateSetting('textColor', this.value)" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0">
                 <span id="textColorHex" class="text-xs font-mono text-slate-300"></span>
               </div>
             </div>
@@ -248,7 +252,7 @@
             <div>
               <span class="text-[11px] text-slate-400 block mb-1">Accent Color</span>
               <div class="flex items-center gap-2 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
-                <input type="color" id="accentColorPicker" oninput="updateSetting('accentColor', this.value)" onchange="updateSetting('accentColor', this.value)" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0">
+                <input type="color" id="accentColorPicker" oninput="updateSetting('accentColor', this.value)" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0">
                 <span id="accentColorHex" class="text-xs font-mono text-slate-300"></span>
               </div>
             </div>
@@ -256,7 +260,7 @@
             <div>
               <span class="text-[11px] text-slate-400 block mb-1">Background Color</span>
               <div class="flex items-center gap-2 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
-                <input type="color" id="bgColorPicker" oninput="updateSetting('bgColor', this.value)" onchange="updateSetting('bgColor', this.value)" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0">
+                <input type="color" id="bgColorPicker" oninput="updateSetting('bgColor', this.value)" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0">
                 <span id="bgColorHex" class="text-xs font-mono text-slate-300"></span>
               </div>
             </div>
@@ -264,7 +268,7 @@
             <div>
               <span class="text-[11px] text-slate-400 block mb-1">Completed Color</span>
               <div class="flex items-center gap-2 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
-                <input type="color" id="completedColorPicker" oninput="updateSetting('completedColor', this.value)" onchange="updateSetting('completedColor', this.value)" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0">
+                <input type="color" id="completedColorPicker" oninput="updateSetting('completedColor', this.value)" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0">
                 <span id="completedColorHex" class="text-xs font-mono text-slate-300"></span>
               </div>
             </div>
@@ -326,6 +330,7 @@
         </div>
       </section>
 
+      <!-- Preview & Instructions Column -->
       <section class="lg:col-span-3 flex flex-col gap-6">
         <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col">
           <div class="flex items-center justify-between mb-3">
@@ -364,7 +369,7 @@
   </div>
 
   <script>
-    // Initialize BroadcastChannel
+    // Initialize BroadcastChannel for Cross-Tab / OBS Syncing
     if ('BroadcastChannel' in window) {
       syncChannel = new BroadcastChannel('obs_todo_sync_channel');
       syncChannel.onmessage = (event) => {
@@ -374,11 +379,6 @@
           renderAll();
         }
       };
-    }
-
-    function updateSetting(key, value) {
-      settings[key] = value;
-      saveAndSync();
     }
 
     // Storage Event Listener across windows
@@ -392,6 +392,11 @@
         renderAll();
       }
     });
+
+    function updateSetting(key, value) {
+      settings[key] = value;
+      saveAndSync();
+    }
 
     function saveAndSync() {
       try {
