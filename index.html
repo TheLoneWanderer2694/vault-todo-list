@@ -4,28 +4,14 @@ import {
   Circle, 
   Trash2, 
   Plus, 
-  GripVertical, 
   Copy, 
   Check, 
   Tv, 
-  Settings, 
   Palette, 
-  Sparkles, 
-  ExternalLink, 
-  Volume2, 
-  VolumeX, 
   Eye, 
-  Layout, 
-  Type, 
-  RefreshCw, 
   Zap, 
   ListTodo, 
-  HelpCircle,
-  Play,
-  Moon,
-  Sun,
-  ShieldAlert,
-  ArrowUpDown
+  HelpCircle 
 } from 'lucide-react';
 
 const THEME_PRESETS = [
@@ -96,13 +82,12 @@ const THEME_PRESETS = [
   }
 ];
 
-// Default empty task list for initial load
+// Always start blank by default
 const INITIAL_TASKS = [];
 
 const CATEGORIES = ['All', 'Stream Goals', 'Sub Goal', 'Games', 'General', 'Break'];
 
 export default function App() {
-  // Check URL params to immediately determine mode
   const getInitialMode = () => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -116,7 +101,6 @@ export default function App() {
 
   const [mode, setMode] = useState(getInitialMode);
 
-  // Sync State Storage
   const [tasks, setTasks] = useState(() => {
     try {
       const saved = localStorage.getItem('obs_todo_tasks');
@@ -171,17 +155,15 @@ export default function App() {
     }
   });
 
-  // UI state for Manager
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskCategory, setNewTaskCategory] = useState('Stream Goals');
   const [activeCategoryFilter, setActiveCategoryFilter] = useState('All');
   const [copiedLink, setCopiedLink] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editingTaskText, setEditingTaskText] = useState('');
-  const [previewBgMode, setPreviewBgMode] = useState('game'); // 'game', 'green', 'dark'
+  const [previewBgMode, setPreviewBgMode] = useState('game');
   const [lastCompletedId, setLastCompletedId] = useState(null);
 
-  // Broadcast Channel for live cross-tab communication
   const channelRef = useRef(null);
 
   useEffect(() => {
@@ -196,7 +178,6 @@ export default function App() {
       };
     }
 
-    // LocalStorage fallback for sync across windows
     const handleStorageChange = (e) => {
       if (e.key === 'obs_todo_tasks' && e.newValue) {
         setTasks(JSON.parse(e.newValue));
@@ -214,7 +195,6 @@ export default function App() {
     };
   }, []);
 
-  // Sync state helpers
   const updateTasksAndSync = (newTasks) => {
     setTasks(newTasks);
     try {
@@ -247,8 +227,8 @@ export default function App() {
       const gain = audioCtx.createGain();
       
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-      osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); // A5
+      osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15);
 
       gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
@@ -258,9 +238,7 @@ export default function App() {
 
       osc.start();
       osc.stop(audioCtx.currentTime + 0.16);
-    } catch (e) {
-      // Audio context might be restricted before interaction
-    }
+    } catch (e) {}
   };
 
   const handleAddTask = (e) => {
@@ -336,7 +314,6 @@ export default function App() {
     updateSettingsAndSync(updated);
   };
 
-  // Generate Unique Encoded OBS Link
   const generatedObsUrl = useMemo(() => {
     if (typeof window === 'undefined') return '';
     const baseUrl = window.location.origin + window.location.pathname;
@@ -349,7 +326,6 @@ export default function App() {
     setTimeout(() => setCopiedLink(false), 2500);
   };
 
-  // Filter tasks for render
   const filteredTasks = tasks.filter(task => {
     if (activeCategoryFilter === 'All') return true;
     return task.category === activeCategoryFilter;
@@ -369,7 +345,6 @@ export default function App() {
             : (settings.transparentBg ? 'transparent' : settings.bgColor)
         }}
       >
-        {/* Header Title */}
         {settings.showTitle && (
           <div className="mb-3 flex items-center justify-between border-b pb-2" style={{ borderColor: `${settings.accentColor}40` }}>
             <h2 
@@ -396,7 +371,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Task List Items */}
         <div className="space-y-2 flex-1 overflow-y-auto pr-1">
           {visibleTasks.length === 0 ? (
             <div className="text-center py-6 opacity-60 text-sm">
@@ -471,7 +445,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* Top Navigation Bar */}
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-indigo-600/20 border border-indigo-500/30 rounded-xl text-indigo-400">
@@ -488,7 +461,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* OBS Link Generator & Copy Action */}
         <div className="flex items-center gap-3">
           <div className="hidden md:flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg p-1.5 px-3 text-xs font-mono text-slate-300">
             <span className="text-slate-500">OBS Link:</span>
@@ -509,12 +481,10 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Dashboard Layout */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Left Column: Task Management (5 Cols) */}
+        {/* Task Management Section */}
         <section className="lg:col-span-5 flex flex-col gap-5">
-          {/* Add New Task Form */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl">
             <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
               <Plus className="w-4 h-4 text-indigo-400" /> Add New Stream Task
@@ -549,14 +519,12 @@ export default function App() {
             </form>
           </div>
 
-          {/* Task List Controls & List */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl flex-1 flex flex-col min-h-[350px]">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
                 <ListTodo className="w-4 h-4 text-indigo-400" /> Active Tasks ({tasks.length})
               </h2>
 
-              {/* Category Filter Pills */}
               <select
                 value={activeCategoryFilter}
                 onChange={(e) => setActiveCategoryFilter(e.target.value)}
@@ -568,7 +536,6 @@ export default function App() {
               </select>
             </div>
 
-            {/* Task Item Rows */}
             <div className="space-y-2 flex-1 overflow-y-auto max-h-[450px] pr-1">
               {filteredTasks.length === 0 ? (
                 <div className="text-center py-12 text-slate-500 text-sm">
@@ -580,13 +547,11 @@ export default function App() {
                     key={task.id}
                     className="group bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 rounded-lg p-3 flex items-center gap-3 transition"
                   >
-                    {/* Reorder Buttons */}
                     <div className="flex flex-col text-slate-600 opacity-0 group-hover:opacity-100 transition">
                       <button onClick={() => handleMoveTask(idx, -1)} className="hover:text-slate-300 text-[10px]">▲</button>
                       <button onClick={() => handleMoveTask(idx, 1)} className="hover:text-slate-300 text-[10px]">▼</button>
                     </div>
 
-                    {/* Toggle Complete */}
                     <button onClick={() => handleToggleTask(task.id)} className="text-slate-400 hover:text-indigo-400">
                       {task.completed ? (
                         <CheckCircle2 className="w-5 h-5 text-emerald-400" />
@@ -595,7 +560,6 @@ export default function App() {
                       )}
                     </button>
 
-                    {/* Task Title & Inline Editing */}
                     <div className="flex-1 min-w-0">
                       {editingTaskId === task.id ? (
                         <input
@@ -622,7 +586,6 @@ export default function App() {
                       )}
                     </div>
 
-                    {/* Delete Action */}
                     <button
                       onClick={() => handleDeleteTask(task.id)}
                       className="text-slate-500 hover:text-rose-400 p-1 rounded transition opacity-0 group-hover:opacity-100"
@@ -636,13 +599,12 @@ export default function App() {
           </div>
         </section>
 
-        {/* Middle Column: Styling & Settings Customization (4 Cols) */}
+        {/* Customizer Section */}
         <section className="lg:col-span-4 bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col gap-5 overflow-y-auto max-h-[85vh]">
           <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
             <Palette className="w-4 h-4 text-purple-400" /> Overlay Customizer
           </h2>
 
-          {/* Theme Presets */}
           <div>
             <label className="text-xs text-slate-400 font-medium mb-2 block">Theme Presets</label>
             <div className="grid grid-cols-2 gap-2">
@@ -672,7 +634,6 @@ export default function App() {
 
           <hr className="border-slate-800" />
 
-          {/* Color Pickers */}
           <div className="space-y-3">
             <label className="text-xs text-slate-400 font-medium block">Custom Colors</label>
             <div className="grid grid-cols-2 gap-3">
@@ -732,7 +693,6 @@ export default function App() {
 
           <hr className="border-slate-800" />
 
-          {/* Typography & Layout Settings */}
           <div className="space-y-4">
             <div>
               <div className="flex justify-between text-xs text-slate-400 mb-1">
@@ -789,7 +749,6 @@ export default function App() {
 
           <hr className="border-slate-800" />
 
-          {/* Toggles */}
           <div className="space-y-2">
             <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
               <span>Transparent Background (OBS Ready)</span>
@@ -833,16 +792,13 @@ export default function App() {
           </div>
         </section>
 
-        {/* Right Column: OBS Live Preview & Instructions (3 Cols) */}
+        {/* Preview and Instructions Section */}
         <section className="lg:col-span-3 flex flex-col gap-6">
-          
-          {/* Real-time OBS Preview */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
                 <Eye className="w-4 h-4 text-emerald-400" /> Live OBS Preview
               </h2>
-              {/* Background Mock Switcher */}
               <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-800 gap-1">
                 <button
                   onClick={() => setPreviewBgMode('game')}
@@ -871,7 +827,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Preview Box Container */}
             <div 
               className={`w-full h-[360px] rounded-lg border border-slate-700 relative overflow-hidden transition-all ${
                 previewBgMode === 'game' 
@@ -881,19 +836,16 @@ export default function App() {
                   : 'bg-slate-950'
               }`}
             >
-              {/* Mock gameplay graphics background */}
               {previewBgMode === 'game' && (
                 <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
               )}
 
-              {/* Rendered Live Overlay Widget */}
               <div className="w-full h-full relative z-10">
                 {renderOverlayList(true)}
               </div>
             </div>
           </div>
 
-          {/* OBS Setup Instructions */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl flex-1">
             <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
               <HelpCircle className="w-4 h-4 text-indigo-400" /> OBS Setup Instructions
@@ -907,7 +859,6 @@ export default function App() {
               <li>Done! Edit tasks here; your stream overlay syncs in real-time.</li>
             </ol>
           </div>
-
         </section>
 
       </main>
